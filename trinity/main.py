@@ -82,6 +82,7 @@ def get_all_plugins() -> Iterable[BasePlugin]:
 
 
 def main() -> None:
+    print("메인에 들어옴----")
     main_entry(trinity_boot, APP_IDENTIFIER_ETH1, get_all_plugins(), (Eth1AppConfig,))
 
 
@@ -94,11 +95,13 @@ def trinity_boot(args: Namespace,
                  logger: logging.Logger) -> None:
     # start the listener thread to handle logs produced by other processes in
     # the local logger.
+    print("\n\n\n----트리니티 부트!-----\n\n\n")
     listener.start()
 
     ensure_eth1_dirs(trinity_config.get_app_config(Eth1AppConfig))
 
     # First initialize the database process.
+    logging.warning("DB 이니셜라이즈")
     database_server_process = ctx.Process(
         name="DB",
         target=run_database_process,
@@ -109,6 +112,7 @@ def trinity_boot(args: Namespace,
         kwargs=extra_kwargs,
     )
 
+    logging.warning("NETWORKING 이니셜라이즈 - 새로운 프로세스가 뜸")
     networking_process = ctx.Process(
         name="networking",
         target=launch_node,
@@ -122,12 +126,14 @@ def trinity_boot(args: Namespace,
 
     # networking process needs the IPC socket file provided by the database process
     try:
+        logging.warning("IPC 네트워크 접속하는 듯 ")
         wait_for_ipc(trinity_config.database_ipc_path)
     except TimeoutError as e:
         logger.error("Timeout waiting for database to start.  Exiting...")
         kill_process_gracefully(database_server_process, logger)
         ArgumentParser().error(message="Timed out waiting for database start")
 
+    logging.warning(" 그 후 네트워크 스타트")
     networking_process.start()
     logger.info("Started networking process (pid=%d)", networking_process.pid)
 
@@ -141,11 +147,14 @@ def trinity_boot(args: Namespace,
             reason=reason
         )
 
+    # todo: 이게 뭔가..?
+    print("메인 엔드포인트는 셧다운 리퀘스트를 섮스한다...?")
     main_endpoint.subscribe(
         ShutdownRequest,
         lambda ev: kill_trinity_with_reason(ev.reason)
     )
 
+    print("\n\n여기서 플러그인들을 구동하기 시작하는 것 같다.\n\n")
     plugin_manager.prepare(args, trinity_config, extra_kwargs)
 
     try:
@@ -161,12 +170,14 @@ def trinity_boot(args: Namespace,
 @with_queued_logging
 def launch_node(args: Namespace, trinity_config: TrinityConfig) -> None:
     with trinity_config.process_id_file('networking'):
-
+        logging.warning("네트워크 설정. 네트워크란 버스 자체를 이야기하는듯")
         endpoint = TrinityEventBusEndpoint()
+        logging.warning("노드 클래스. light냐 full이냐")
         NodeClass = trinity_config.get_app_config(Eth1AppConfig).node_class
         node = NodeClass(endpoint, trinity_config)
         # The `networking` process creates a process pool executor to offload cpu intensive
         # tasks. We should revisit that when we move the sync in its own process
+        # todo: 무슨 말이냐
         ensure_global_asyncio_executor()
         loop = node.get_event_loop()
 
@@ -174,6 +185,7 @@ def launch_node(args: Namespace, trinity_config: TrinityConfig) -> None:
             NETWORKING_EVENTBUS_ENDPOINT,
             trinity_config.ipc_dir
         )
+        logging.warning("엔드 포인트 시작. 이로써 엔드포인트 버스가 가동을 시작하는 듯 하다")
         endpoint.start_serving_nowait(
             networking_connection_config,
             loop,
@@ -185,7 +197,9 @@ def launch_node(args: Namespace, trinity_config: TrinityConfig) -> None:
             # the same endpoint
             networking_connection_config,
         )
+        logging.warning("어나운스 엔드포인트..?")
         endpoint.announce_endpoint()
+        logging.warning("또 다른 엔드포인트 플러그인 매니저. 여러 프로세스가 서로의 플러그인에 접근하기 위한 목적인 것 같다.")
         # This is a second PluginManager instance governing plugins in a shared process.
         plugin_manager = setup_plugins(SharedProcessScope(endpoint), get_all_plugins())
         plugin_manager.prepare(args, trinity_config)

@@ -167,6 +167,7 @@ class PluginManager:
         Register one or multiple instances of :class:`~trinity.extensibility.plugin.BasePlugin`
         with the plugin manager.
         """
+        print("플러그인 register")
 
         new_plugins = [plugins] if isinstance(plugins, BasePlugin) else plugins
         self._plugin_store.extend(new_plugins)
@@ -190,8 +191,11 @@ class PluginManager:
         :meth:`~trinity.extensibility.plugin.BasePlugin.ready` on every plugin that this
         plugin manager instance is responsible for.
         """
-        for plugin in self._plugin_store:
+        logging.warning("플러그인 준비. 준비되었다고 알리는건가")
+        logging.warning(f"현재 플러그인 목록: {self._plugin_store}")
+        logging.warning(f"현재 플러그인 갯수: {len(self._plugin_store)}")
 
+        for plugin in self._plugin_store:
             if not self._scope.is_responsible_for_plugin(plugin):
                 continue
 
@@ -199,7 +203,9 @@ class PluginManager:
                 plugin,
                 TrinityBootInfo(args, trinity_config, boot_kwargs)
             )
+            print(f"{plugin.name} 플러그인 상태: {plugin.status}")
             plugin.ready(self.event_bus_endpoint)
+            print(f"{plugin.name} 플러그인을 준비 상태로 변경: {plugin.status}\n\n")
 
     def shutdown_blocking(self) -> None:
         """

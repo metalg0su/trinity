@@ -271,7 +271,7 @@ class BaseIsolatedPlugin(BasePlugin):
     isolated plugin is stopped it does first receive a SIGINT followed by a SIGTERM soon after.
     It is up to the plugin to handle these signals accordingly.
     """
-
+    # todo: 이 플러그인의 특징은 다른 프로세스로 동작한다는 것이로군
     _process: Process = None
 
     @property
@@ -285,6 +285,7 @@ class BaseIsolatedPlugin(BasePlugin):
         """
         Prepare the plugin to get started and eventually call ``do_start`` in a separate process.
         """
+        print(f"{self.name} 스타트! (BaseIsolatedPlugin)")
         self._status = PluginStatus.STARTED
         self._process = ctx.Process(
             target=self._prepare_start,
@@ -308,7 +309,8 @@ class BaseIsolatedPlugin(BasePlugin):
         )
         # This makes the `main` process aware of this Endpoint which will then propagate the info
         # so that every other Endpoint can connect directly to the plugin Endpoint
-        self.event_bus.announce_endpoint()
+        self.event_bus.announce_endpoint() # 이건 자신의 존재를 알리는 것 같고,
+        # 이건 자신의 상태를 알리는 것 같고
         self.event_bus.broadcast(
             PluginStartedEvent(type(self))
         )

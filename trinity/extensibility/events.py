@@ -30,3 +30,4 @@ class ResourceAvailableEvent(BaseEvent):
     def __init__(self, resource: Any, resource_type: Type[Any]) -> None:
         self.resource = resource
         self.resource_type = resource_type
+

@@ -66,6 +66,7 @@ from trinity._utils.proxy import (
 
 
 def main_beacon() -> None:
+    print("메인 비콘 들어옴")
     main_entry(trinity_boot, APP_IDENTIFIER_BEACON, BASE_PLUGINS, (BeaconAppConfig,))
 
 
@@ -78,6 +79,7 @@ def trinity_boot(args: Namespace,
                  logger: logging.Logger) -> None:
     # start the listener thread to handle logs produced by other processes in
     # the local logger.
+    print("비콘의 트리니티 부트 출발")
     listener.start()
 
     ensure_beacon_dirs(trinity_config.get_app_config(BeaconAppConfig))

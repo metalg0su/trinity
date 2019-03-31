@@ -103,8 +103,10 @@ def main_entry(trinity_boot: BootFn,
                plugins: Iterable[BasePlugin],
                sub_configs: Iterable[Type[BaseAppConfig]]) -> None:
 
+    print("메인 엔트리에서 메인 엔드포인트 생성")
     main_endpoint = TrinityMainEventBusEndpoint()
 
+    print("플러그인 매니저")
     plugin_manager = setup_plugins(
         MainAndIsolatedProcessScope(main_endpoint),
         plugins
@@ -120,6 +122,7 @@ def main_entry(trinity_boot: BootFn,
             "directory with `--data-dir path/to/data/directory`"
         )
 
+    print("잡동사니 컨피그 설정...")
     has_ambigous_logging_config = (
         args.log_levels is not None and
         None in args.log_levels and
@@ -144,7 +147,12 @@ def main_entry(trinity_boot: BootFn,
     if args.log_levels:
         setup_log_levels(args.log_levels)
 
+    # 이 시점에서 가능한 엔드포인트들을 모두 접속하도록 하는건가
+    # todo: 가능한 엔드포인트는 어디서 받는거죠? 플러그인 매니저에서 실행되면서 알아서 메인으로 붙으면서 알게 되나?
+    print("트랙킹 전---")
     main_endpoint.track_and_propagate_available_endpoints()
+    print("현재 가능한 엔드포인트들(트랙킹): ", main_endpoint.available_endpoints)
+
     try:
         trinity_config = TrinityConfig.from_parser_args(args, app_identifier, sub_configs)
     except AmbigiousFileSystem:
@@ -175,6 +183,7 @@ def main_entry(trinity_boot: BootFn,
         args.file_log_level,
     )
 
+    # 이 시점에서 다른 곳으로 들어가는군 - 그냥 로그 띄우는 거야
     display_launch_logs(trinity_config)
 
     # compute the minimum configured log level across all configured loggers.
@@ -202,11 +211,15 @@ def main_entry(trinity_boot: BootFn,
             MAIN_EVENTBUS_ENDPOINT,
             trinity_config.ipc_dir
         )
+        # 여긴 뭐지
+        print("메인 엔드포인트 시작! - start_serving_nowtati")
         main_endpoint.start_serving_nowait(main_connection_config)
 
         # We listen on events such as `ShutdownRequested` which may or may not originate on
         # the `main_endpoint` which is why we connect to our own endpoint here
+        print("메인 엔드포인트 - 엔드포인트와 연결하기 - connect_to_endpoints_blocking")
         main_endpoint.connect_to_endpoints_blocking(main_connection_config)
+        print("메인 엔트리에서 트리니티 부트 호출함")
         trinity_boot(
             args,
             trinity_config,
@@ -216,9 +229,11 @@ def main_entry(trinity_boot: BootFn,
             main_endpoint,
             stderr_logger,
         )
+    print("메인 엔트리 끝...")
 
 
 def setup_plugins(scope: BaseManagerProcessScope, plugins: Iterable[BasePlugin]) -> PluginManager:
+    print(f"플로그인 설치.매니저를 만들고 거기에 입력받은 {plugins}를 등록하는듯")
     plugin_manager = PluginManager(scope)
     plugin_manager.register(plugins)
 
