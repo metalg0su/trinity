@@ -50,7 +50,7 @@ class TrinityEventBusEndpoint(Endpoint):
         """
         Connect this endpoint to all new endpoints that are announced
         """
-        print("엔드포인트 섮스. >", self.name)
+        print("아마도 Networking 엔드포인트가 얘를 호출할 것임. 확인하기. >", self.name)
         self.subscribe(AvailableEndpointsUpdated, self.connect_to_other_endpoints)
 
     def announce_endpoint(self) -> None:
@@ -104,6 +104,6 @@ class TrinityMainEventBusEndpoint(TrinityEventBusEndpoint):
             self.logger.debug("Connected EventBus Endpoints %s", self.available_endpoints)
 
         print(f"섮스! - TrinityMainEventBusEndpoint")
-        print(f"eventBustConnected: {EventBusConnected}")
-        print(f"handle_new_endpoints: {handle_new_endpoints}")
+        print(f"이벤트 종류: {EventBusConnected}")
+        print(f"핸들링할 엔드포인트: {handle_new_endpoints}")
         self.subscribe(EventBusConnected, handle_new_endpoints)

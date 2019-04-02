@@ -72,6 +72,7 @@ class BaseManagerProcessScope(ABC):
 
 
 class MainAndIsolatedProcessScope(BaseManagerProcessScope):
+    """ 얘는 메인 스코프로 관리되기 위해 정의된 것 같고..."""
 
     def __init__(self, main_proc_endpoint: TrinityMainEventBusEndpoint) -> None:
         self.endpoint = main_proc_endpoint
@@ -103,6 +104,7 @@ class MainAndIsolatedProcessScope(BaseManagerProcessScope):
 
 
 class SharedProcessScope(BaseManagerProcessScope):
+    #todo: 얘의 목적은 무엇인가
 
     def __init__(self, shared_proc_endpoint: TrinityEventBusEndpoint) -> None:
         self.endpoint = shared_proc_endpoint
@@ -167,7 +169,7 @@ class PluginManager:
         Register one or multiple instances of :class:`~trinity.extensibility.plugin.BasePlugin`
         with the plugin manager.
         """
-        print("플러그인 register")
+        logging.warning("플러그인 register")
 
         new_plugins = [plugins] if isinstance(plugins, BasePlugin) else plugins
         self._plugin_store.extend(new_plugins)
@@ -191,21 +193,27 @@ class PluginManager:
         :meth:`~trinity.extensibility.plugin.BasePlugin.ready` on every plugin that this
         plugin manager instance is responsible for.
         """
+
+        # todo: 이 플러그인 매니저가 연결된 버스에, _plugin_store에 입력된 플러그인들이 접속(ready 상태)되도록 하는 메소드인 것 같음..
+
         logging.warning("플러그인 준비. 준비되었다고 알리는건가")
-        logging.warning(f"현재 플러그인 목록: {self._plugin_store}")
+        logging.warning(f"현재 플러그인 목록: {[pg.name for pg in self._plugin_store]}")
         logging.warning(f"현재 플러그인 갯수: {len(self._plugin_store)}")
+        logging.warning(f"목표 이벤트 버스 엔드포인트: {self.event_bus_endpoint}")
 
         for plugin in self._plugin_store:
+            # 자기의 스코프 안에 있지 않은 플러그인으 ㄴ걸러내고
             if not self._scope.is_responsible_for_plugin(plugin):
                 continue
 
+            # 관련있는 녀석들만 context 생성
             self._scope.create_plugin_context(
                 plugin,
                 TrinityBootInfo(args, trinity_config, boot_kwargs)
             )
-            print(f"{plugin.name} 플러그인 상태: {plugin.status}")
+            logging.warning(f"{plugin.name} 플러그인 상태: {plugin.status}")
             plugin.ready(self.event_bus_endpoint)
-            print(f"{plugin.name} 플러그인을 준비 상태로 변경: {plugin.status}\n\n")
+            logging.warning(f"{plugin.name} 플러그인을 준비 상태로 변경: {plugin.status}\n\n")
 
     def shutdown_blocking(self) -> None:
         """
